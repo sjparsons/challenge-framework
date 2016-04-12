@@ -24,7 +24,7 @@ Ultimately, on performance the two are quite closely matched, but Esprima seems 
 * Uses a standardized ESTree syntax tree format
 * has good test coverage (according to docs)
 
-## Acorn
+## Acorn 3.0.4
 
 * Github stars: 1560 (12 April 2016)
 * Open issues: 8
@@ -71,4 +71,4 @@ As you can see, across these set of tests Esprima outperformed Acorn considerabl
 
 ### Conclusion
 
-Esprima seems to maybe have a slight edge over Acorn as far as performance.
+Esprima seems to maybe have a slight edge over Acorn as far as performance. Historically, it seems that Acorn was faster, but perhaps recent changes have helped make Esprima faster.
