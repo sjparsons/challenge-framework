@@ -29,8 +29,7 @@
           </div>
           <div class="col-md-4">
 
-            <p>... results ...</p>
-
+            <div id="results"></div>
 
           </div>
       </div>
@@ -38,11 +37,43 @@
     </div>
 
 
+<script id="resultsTemplate" type="x-tmpl-mustache">
+<div class="panel panel-default">
+<div class="panel-heading">Required functionality</div>
+<div class="panel-body">
+
+  {{ #must }}
+  <div class="{{#pass}}text-success{{/pass}} {{^pass}}text-danger{{/pass}}">
+      {{#pass}}<span class="glyphicon glyphicon-ok"></span>{{/pass}}          {{^pass}}<span class="glyphicon glyphicon-remove"></span>{{/pass}}
+      {{message}}
+  </div>
+  {{ /must }}
+
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">Must not use these elements</div>
+<div class="panel-body">
+
+  {{ #mustNot }}
+  <div class="{{#pass}}text-success{{/pass}} {{^pass}}text-danger{{/pass}}">
+      {{#pass}}<span class="glyphicon glyphicon-ok"></span>{{/pass}}          {{^pass}}<span class="glyphicon glyphicon-remove"></span>{{/pass}}
+      {{message}}
+  </div>
+  {{ /mustNot }}
+
+</div>
+</div>
+</script>
 
     <script src="/node_modules/jquery/dist/jquery.min.js"></script>
     <script src="/node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="/node_modules/esprima/esprima.js"></script>
+    <script src="/node_modules/mustache/mustache.min.js"></script>
     <script src="/scripts/proctor/proctor.js"></script>
     <script src="/scripts/app.js"></script>
+
+
+
   </body>
 </html>

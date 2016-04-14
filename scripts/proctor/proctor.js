@@ -36,7 +36,7 @@ function Proctor(config) {
  * types that you expect must be in the code.
  */
 Proctor.prototype.must = function(requirements) {
-  if (requirements && typeof requirements === Array) {
+  if (requirements && Array.isArray(requirements)) {
     this._must = requirements;
   }
   return this._must;
@@ -47,7 +47,7 @@ Proctor.prototype.must = function(requirements) {
  * types that you expect must not be in the code.
  */
 Proctor.prototype.mustNot = function(requirements) {
-  if (requirements && typeof requirements === Array) {
+  if (requirements && Array.isArray(requirements)) {
     this._mustNot = requirements;
   }
   return this._mustNot;
@@ -69,7 +69,7 @@ Proctor.prototype.mustNot = function(requirements) {
  *       }
  */
 Proctor.prototype.structure = function(requirements) {
-  if (requirements && typeof requirements === Array) {
+  if (requirements && typeof(requirements) === 'array') {
     this._structure = requirements;
   }
   return this._structure;
@@ -153,16 +153,16 @@ Proctor.prototype._evaluateSimple = function(recursionDepth) {
     if (!list) return;
 
     var listLength = list.length,
-        foundMust, foundMustNot;
+        foundMustIndex, foundMustNotIndex;
 
     for (var i=0; i < listLength; i++) {
-      foundMust = requirementsMust.indexOf(list[i]['type']);
-      if (foundMust) {
-        requirementsMust[i] = null;
+      foundMustIndex = requirementsMust.indexOf(list[i]['type']);
+      if (foundMustIndex !== -1) {
+        requirementsMust[foundMustIndex] = null;
       }
-      foundMustNot = requirementsMustNot.indexOf(list[i]['type']);
-      if (foundMustNot) {
-        requirementsMustNot[i] = null;
+      foundMustNotIndex = requirementsMustNot.indexOf(list[i]['type']);
+      if (foundMustNotIndex !== -1) {
+        requirementsMustNot[foundMustNotIndex] = null;
       }
       evalRecursive(list[i]['body'], level + 1);
     }
@@ -189,13 +189,13 @@ Proctor.prototype._evaluateSimple = function(recursionDepth) {
   }
 
   for(var j=0; j < this._mustNot.length; j++) {
-    reqType = this._mustNot[i];
-    reqPass = requirementsMustNot[i] !== null;
+    reqType = this._mustNot[j];
+    reqPass = requirementsMustNot[j] !== null;
 
     resultsMustNot.push({
       'type': reqType,
       'pass': reqPass,
-      'message': this._messageSimple('must', reqType, reqPass)
+      'message': this._messageSimple('mustNot', reqType, reqPass)
     });
   }
 
