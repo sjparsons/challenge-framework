@@ -17,7 +17,7 @@ function Proctor(config) {
   this._mustNot = [];
   this._structure = [];
   this._tree = {};
-  this.results = {};
+  this._results = {};
   this._recursionDepth = Proctor.DEFAULT_RECURSION_DEPTH;
 
   if (config && typeof config === Object) {
@@ -87,7 +87,7 @@ Proctor.prototype.grade = function(code, callback) {
   setTimeout(function(){
     t._parse(code);
     t._evaluate();
-    if ( callback && typeof callback === 'Function') {
+    if ( callback && typeof callback === 'function') {
         callback(t.getResults());
     }
   }, 0);
@@ -111,7 +111,11 @@ Proctor.prototype.getResults = function(type) {
  * Internal method to parse the code into a tree.
  */
 Proctor.prototype._parse = function(code) {
-  this._tree = esprima.parse(code);
+  try {
+      this._tree = esprima.parse(code);
+  } catch(e) {
+      console.log('INVALID CODE');
+  }
   return this._tree;
 }
 
@@ -149,7 +153,7 @@ Proctor.prototype._evaluateSimple = function(recursionDepth) {
     if (!list) return;
 
     var listLength = list.length,
-        foundMust;
+        foundMust, foundMustNot;
 
     for (var i=0; i < listLength; i++) {
       foundMust = requirementsMust.indexOf(list[i]['type']);
@@ -180,7 +184,7 @@ Proctor.prototype._evaluateSimple = function(recursionDepth) {
     resultsMust.push({
       'type': reqType,
       'pass': reqPass,
-      'message': this._messageSimple('must', reqType, reqPass);
+      'message': this._messageSimple('must', reqType, reqPass)
     });
   }
 
@@ -191,7 +195,7 @@ Proctor.prototype._evaluateSimple = function(recursionDepth) {
     resultsMustNot.push({
       'type': reqType,
       'pass': reqPass,
-      'message': this._messageSimple('must', reqType, reqPass);
+      'message': this._messageSimple('must', reqType, reqPass)
     });
   }
 
@@ -216,7 +220,7 @@ Proctor.prototype._evaluateStructure = function() {
  * @param nodeType - one of the supported nodes
  * @param pass - whether the code passed the requirement
  */
-Proctor.prototype._messageSimple(requirementType, nodeType, pass ) {
+Proctor.prototype._messageSimple = function(requirementType, nodeType, pass ) {
   var nodeName = nodeType.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
       aNodeName = this.aAn(nodeName) + ' ' + nodeName,
       message;
@@ -245,7 +249,7 @@ Proctor.prototype._messageSimple(requirementType, nodeType, pass ) {
  * @param nodeTypeParent - one of the supported nodes
  * @param pass - whether the code passed the requirement
  */
-Proctor.prototype._messageStructure(nodeTypeParent, nodeTypeChild, pass ) {
+Proctor.prototype._messageStructure = function(nodeTypeParent, nodeTypeChild, pass ) {
   var nodeNameParent = nodeTypeParent.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
       nodeNameChild = nodeTypeChild.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
       aNodeNameChild = this.aAn(nodeNameChild) + ' ' + nodeNameChild,
