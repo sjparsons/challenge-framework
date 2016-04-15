@@ -22,7 +22,29 @@ proctor.structure([
       "ExpressionStatement",
       "VariableDeclaration",
     ]
-  }
+  },
+  {
+    type: "FunctionDeclaration",
+    contains: [
+      "ExpressionStatement",
+      "VariableDeclaration",
+      "VariableDeclaration",
+    ]
+  },
+  {
+    type: "ForStatement",
+    contains: [
+      "ExpressionStatement",
+      "VariableDeclaration",
+    ]
+  },
+  {
+    type: "WhileStatement",
+    contains: [
+      "SwitchStatement"
+
+    ]
+  },
 ]);
 
 $('#code').on('keyup change', function(){

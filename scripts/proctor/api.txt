@@ -32,9 +32,7 @@ exam.structure([
   {
     type: "FunctionDeclaration",
     contains: [
-      "SwitchStatement",
-      "SwitchCase",
-
+      "SwitchStatement"
     ]
   },
 
