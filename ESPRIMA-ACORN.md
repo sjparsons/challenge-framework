@@ -44,7 +44,7 @@ Both libraries have performance comparisons out of the box.
 [Esprima's comparison page](http://esprima.org/test/compare.html) compares number of milliseconds to parse the source of jQuery, AngularJS and React for each of a series of libraries. It performs the parse multiple times and returns a confidence interval.
 
 | Library | Esprima | Acorn 2.4.0 |
-| --
+| ----------- | ------------- | ------------- |
 | jQuery.Mobile 1.4.2 | 133.4 ±10.3% |143.9 ±15.2% |
 | Angular 1.2.5 | 116.0 ±8.3% | 100.2 ±6.8% |
 | React 0.13.3 | 134.0 ±6.6% | 133.7 ±10.9% |
@@ -54,7 +54,7 @@ In this test the two libraries seem pretty close in performance.
 [Acorn's page](https://marijnhaverbeke.nl/acorn/test/bench.html) compares number of lines per second. In my experience it seems to vary quite a lot. Below is a table of my results running the tests *with location date*.
 
 | Run | Esprima | Acorn |
-| ----
+| ----------- | ------------- | ------------- |
 | 1    |  199974 l/sec     | 156798 l/sec |
 | 2    |  191558 l/sec     | 130798 l/sec |
 | 3    |  230516 l/sec     | 226164 l/sec |
