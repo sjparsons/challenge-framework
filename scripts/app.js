@@ -47,12 +47,24 @@ proctor.structure([
   },
 ]);
 
-$('#code').on('keyup change', function(){
-  var code = $("#code").val();
+
+var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/chrome");
+    editor.getSession().setMode("ace/mode/javascript");
+
+editor.getSession().on('change', function(e) {
+  processCode();
+});
+
+processCode(); // Run once, to initialise the viewport.
+
+
+function processCode() {
+  var code = editor.getValue();
   proctor.grade(code, function(results){
     renderResults(results);
   });
-});
+}
 
 function renderResults(results) {
   var must, mustNot, structure;
@@ -78,8 +90,6 @@ function renderResults(results) {
   $('#results').html(must + mustNot + structure);
 };
 
-// Trigger handler to get basic results.
-$('#code').keyup();
 
 
 
