@@ -2,10 +2,7 @@
 (function($){
 
 var proctor = new Proctor(),
-    resultsTemplate =  $('#resultsTemplate').html();
-
-
-Mustache.parse(resultsTemplate);
+    resultsPanel =  Handlebars.compile( $('#resultsPanel').html());
 
 proctor.must([
   "VariableDeclaration",
@@ -18,6 +15,16 @@ proctor.mustNot([
   "WhileStatement"
 ]);
 
+proctor.structure([
+  {
+    type: "FunctionDeclaration",
+    contains: [
+      "ExpressionStatement",
+      "VariableDeclaration",
+    ]
+  }
+]);
+
 $('#code').on('keyup change', function(){
   var code = $("#code").val();
   proctor.grade(code, function(results){
@@ -26,8 +33,27 @@ $('#code').on('keyup change', function(){
 });
 
 function renderResults(results) {
-  var rendered = Mustache.render(resultsTemplate, results);
-  $('#results').html(rendered);
+  var must, mustNot, structure;
+  if (results.must) {
+    must = resultsPanel({
+      'heading': 'Required functionality',
+      'results': results.must
+    });
+  }
+  if (results.mustNot) {
+    mustNot = resultsPanel({
+      'heading': 'Must not use these elements',
+      'results': results.mustNot
+    });
+  }
+  if (results.structure) {
+    structure = resultsPanel({
+      'heading': 'Required structure',
+      'results': results.structure
+    });
+  }
+
+  $('#results').html(must + mustNot + structure);
 };
 
 // Trigger handler to get basic results.

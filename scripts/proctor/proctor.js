@@ -18,16 +18,11 @@ function Proctor(config) {
   this._structure = [];
   this._tree = {};
   this._results = {};
-  this._recursionDepth = Proctor.DEFAULT_RECURSION_DEPTH;
 
   if (config && typeof config === Object) {
     this.must(config.must);
     this.mustNot(config.mustNot);
     this.structure(config.structure);
-
-    if (config.recursionDepth) {
-      this._recursionDepth = config.recursionDepth;
-    }
   }
 }
 
@@ -69,7 +64,7 @@ Proctor.prototype.mustNot = function(requirements) {
  *       }
  */
 Proctor.prototype.structure = function(requirements) {
-  if (requirements && typeof(requirements) === 'array') {
+  if (requirements && Array.isArray(requirements)) {
     this._structure = requirements;
   }
   return this._structure;
@@ -93,6 +88,7 @@ Proctor.prototype.grade = function(code, callback) {
   }, 0);
 }
 
+
 /**
  * Return the most recent set of results. If specified, returns only
  * results of a given type, otherwise all results.
@@ -107,6 +103,7 @@ Proctor.prototype.getResults = function(type) {
   }
 }
 
+
 /**
  * Internal method to parse the code into a tree.
  */
@@ -119,99 +116,115 @@ Proctor.prototype._parse = function(code) {
   return this._tree;
 }
 
+
 /**
  * Internal method to evaluate the tree against the requirements.
  */
 Proctor.prototype._evaluate = function() {
-  this._evaluateSimple();
+  this._evaluateSimple('must');
+  this._evaluateSimple('mustNot');
   this._evaluateStructure();
 }
 
+
 /**
  * Internal method to evaluate the tree against the simple must/not requirements.
+ * @param reqSet - requirement set: one of 'must' or 'mustNot'
  */
-Proctor.prototype._evaluateSimple = function(recursionDepth) {
-  var requirementsMust = [],
-      requirementsMustNot = [],
-      resultsMust = [],
-      resultsMustNot = [],
-      recursionDepth = this._recursionDepth;
+Proctor.prototype._evaluateSimple = function( reqSet ) {
+  var requirements = this._findNodeTypes(this._tree['body'], this['_'+reqSet]),
+      req,
+      pass,
+      results = [];
 
-  // Populate local copies of requirements
-  this._must.map(function(req){
-    requirementsMust.push(req);
-  });
-  this._mustNot.map(function(req){
-    requirementsMustNot.push(req);
-  });
-
-  /**
-   * Recurse through tree looking for required nodes.
-   */
-  function evalRecursive( list, level ) {
-    if (level > recursionDepth) return;
-    if (!list) return;
-
-    var listLength = list.length,
-        foundMustIndex, foundMustNotIndex;
-
-    for (var i=0; i < listLength; i++) {
-      foundMustIndex = requirementsMust.indexOf(list[i]['type']);
-      if (foundMustIndex !== -1) {
-        requirementsMust[foundMustIndex] = null;
-      }
-      foundMustNotIndex = requirementsMustNot.indexOf(list[i]['type']);
-      if (foundMustNotIndex !== -1) {
-        requirementsMustNot[foundMustNotIndex] = null;
-      }
-      evalRecursive(list[i]['body'], level + 1);
-    }
-  }
-  evalRecursive(this._tree['body'], 1);
-
-  // At this point ...
-  // - requirementsMust (array) has a null for all requirements that passed and
-  //   a string for those that failed.
-  // - requirementsMustNot (array) has a null for all requirements that failed
-  //   and a string for those that passed.
-
-  var reqType, reqPass;
-
-  for(var i=0; i < this._must.length; i++) {
-    reqType = this._must[i];
-    reqPass = requirementsMust[i] === null;
-
-    resultsMust.push({
-      'type': reqType,
-      'pass': reqPass,
-      'message': this._messageSimple('must', reqType, reqPass)
+  for(var i=0; i < requirements.length; i++) {
+    req = requirements[i];
+    pass = reqSet === 'mustNot' ? !req['found'] : req['found'];
+    results.push({
+      'type': req['type'],
+      'pass': pass,
+      'message': this._messageSimple(reqSet, req['type'], pass)
     });
   }
-
-  for(var j=0; j < this._mustNot.length; j++) {
-    reqType = this._mustNot[j];
-    reqPass = requirementsMustNot[j] !== null;
-
-    resultsMustNot.push({
-      'type': reqType,
-      'pass': reqPass,
-      'message': this._messageSimple('mustNot', reqType, reqPass)
-    });
-  }
-
-  this._results['must'] = resultsMust;
-  this._results['mustNot'] = resultsMustNot;
+  this._results[reqSet] = results;
 }
-
 
 
 /**
  * Internal method to evaluate the tree against structure requirements.
  */
 Proctor.prototype._evaluateStructure = function() {
+  var list = this._tree['body'],
+      listLength = list.length,
+      results = [],
+      requirement,
+      requirementMet,
+      subReqs,
+      subReqsMet,
+      message;
 
+  // Loop through requirements
+  for(var i=0; i < this._structure.length; i++ ) {
+    requirement = this._structure[i];
+    requirementMet = false;
+
+    // Look through each element in tree on first level
+    for(var j=0; j < listLength; j++) {
+
+      // If we find a match with requirement, then descend into the body
+      // and test for whether the sub requirements are met.
+      if(list[j]['type'] === requirement['type']) {
+
+        if (list[j]['body'] && list[j]['body']['body']) {
+
+          subReqs = this._findNodeTypes(list[j]['body']['body'],
+                                        requirement['contains']);
+          subReqsMet = subReqs.reduce(function(prev, current){
+            return prev && current.found;
+          }, true);
+
+          if (subReqsMet) {
+            requirementMet = true;
+          }
+        }
+      }
+    }
+
+    message = this._messageStructure(requirement['type'],
+                           requirement['contains'],
+                           requirementMet);
+    results.push({
+      'pass': requirementMet,
+      'message': message
+    });
+  }
+
+  this._results['structure'] = results;
 }
 
+
+/**
+ * Searches for node types listed in nodesSearch in the nodeList provided
+ * Returns an array with an object for each nodeType given item in nodesSearch
+ * listing whether the nodeType was found.
+ */
+Proctor.prototype._findNodeTypes = function(nodeList, nodesSearch) {
+  var listLength = nodeList.length,
+      reqs = nodesSearch.map(function(req){
+        return {type: req, found: false};
+      }),
+      numReqs = reqs.length;
+
+  for( var i=0; i < listLength; i++) {
+    for(var j=0; j < numReqs; j++ ) {
+      if(nodeList[i]['type'] === reqs[j]['type'] && !reqs[j]['found']) {
+        reqs[j]['found'] = true;
+        break;
+      }
+    }
+  }
+  return reqs;
+}
 
 
 /**
@@ -237,31 +250,36 @@ Proctor.prototype._messageSimple = function(requirementType, nodeType, pass ) {
     } else {
       message = 'You must not use '+ aNodeName;
     }
-  } else if (requirementType === 'structure') {
-
   }
   return message;
 }
+
 
 /**
  * Generates a message about structure requirements to be used in results.
  * @param nodeTypeParent - one of the supported structural nodes
- * @param nodeTypeParent - one of the supported nodes
+ * @param nodeTypeChildren - array of children nodes that should be present
  * @param pass - whether the code passed the requirement
  */
-Proctor.prototype._messageStructure = function(nodeTypeParent, nodeTypeChild, pass ) {
-  var nodeNameParent = nodeTypeParent.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
-      nodeNameChild = nodeTypeChild.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
-      aNodeNameChild = this.aAn(nodeNameChild) + ' ' + nodeNameChild,
+Proctor.prototype._messageStructure = function(nodeTypeParent, nodeTypeChildren, pass ) {
+  var that = this,
+      nodeNameParent = nodeTypeParent.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase(),
+      nodeNameChildren = nodeTypeChildren.map(function(type){
+        var name = type.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+        return that.aAn(name) + ' ' + name;
+      }),
       message;
 
   if (pass) {
-    message = "The " + nodeNameParent + " contains " + aNodeNameChild;
+    message = "The " + nodeNameParent + " contains " +
+      this.proseList(nodeNameChildren);
   } else {
-    message = "The " + nodeNameParent + " must contain " + aNodeNameChild;
+    message = "The " + nodeNameParent + " must contain " +
+      this.proseList(nodeNameChildren);
   }
   return message;
 }
+
 
 Proctor.prototype.aAn = function( str) {
   var an = ['a', 'e', 'i', 'o', 'u'];
@@ -272,51 +290,17 @@ Proctor.prototype.aAn = function( str) {
   }
 }
 
-/*
- * Types of nodes in the tree that we look for.
- */
-Proctor._nodes = {
-  'Identifier': {},
-  'Literal': {},
-  // Statements
-  'ExpressionStatement': {},
-  'BlockStatement': {},
-  'EmptyStatement': {},
-  'DebuggerStatement': {},
-  'WithStatement': { },
-  'ReturnStatement': {},
-  'LabeledStatement': {},
-  'BreakStatement': {},
-  'ContinueStatement': {},
-  'IfStatement': {},
-  'SwitchStatement': {},
-  'SwitchCase': {},
-  'ThrowStatement': {},
-  'TryStatement': { structure: true, parameter: 'block' },
-  'CatchClause': {},
-  'WhileStatement': { structure: true, parameter: 'body' },
-  'DoWhileStatement': { structure: true, parameter: 'body' },
-  'ForStatement': { structure: true, parameter: 'body' },
-  'ForInStatement': { structure: true, parameter: 'body' },
-  // Declarations
-  'FunctionDeclaration': { structure: true, parameter: 'body' },
-  'VariableDeclaration': {},
-  // Expressions
-  'ThisExpression': {},
-  'ArrayExpression': {},
-  'ObjectExpression': {},
-  'Property': {},
-  'FunctionExpression': {},
-  'UnaryExpression': {},
-  'UpdateExpression': {},
-  'BinaryExpression': {},
-  'AssignmentExpression': {},
-  'LogicalExpression': {},
-  'MemberExpression': {},
-  'ConditionalExpression': {},
-  'CallExpression': {},
-  'NewExpression': {},
-  'SequenceExpression': {}
-};
 
-Proctor.DEFAULT_RECURSION_DEPTH = 3;
+Proctor.prototype.proseList = function(list) {
+  var proseList = list.reduce(function(prev, current, index, array){
+      if (index === 0) { // first item
+        return current;
+      }
+      if (index === (array.length-1)) { // last item
+        return prev + ' and ' + current;
+      } else {
+        return prev + ', ' + current;
+      }
+  },'');
+  return proseList;
+}

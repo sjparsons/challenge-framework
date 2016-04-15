@@ -19,21 +19,22 @@ exam.structure([
     type: "FunctionDeclaration",
     contains: [
       "ExpressionStatement",
-      {
-        type: "FunctionDeclaration",
-        contains: []
-      }
+      "VariableDeclaration",
     ]
   },
   {
     type: "ForStatement",
     contains: [
+      "ExpressionStatement",
+      "VariableDeclaration",
+    ]
+  },
+  {
+    type: "FunctionDeclaration",
+    contains: [
       "SwitchStatement",
-      "SwitchStatement",
-      {
-        type: "FunctionDeclaration",
-        contains: []
-      }
+      "SwitchCase",
+
     ]
   },
 
